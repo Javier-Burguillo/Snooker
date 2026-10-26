@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Snooker</title>
+<meta name="apple-mobile-web-app-title" content="Snooker">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#092619">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  html { background: #092619; }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: una sola columna de mesa de juego — marcador arriba, tapete con bolas al centro, acciones abajo al alcance del pulgar */
+:root {
+  --felt: #0f3b2a;
+  --felt-deep: #092619;
+  --felt-raised: #144a35;
+  --cushion: #3b2618;
+  --ink: #eef4ee;
+  --muted: #9ab8a6;
+  --line: rgba(238, 244, 238, 0.14);
+  --chalk: #7cc4ea;
+  --warn: #f2b84b;
+  --danger: #ef6a5a;
+  --win: #82dea0;
+  --b-red: #c8142f;
+  --b-yellow: #f2c230;
+  --b-green: #21924f;
+  --b-brown: #7d4a24;
+  --b-blue: #1f62c4;
+  --b-pink: #f292b6;
+  --b-black: #121212;
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Barlow", system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { min-height: 100%; }
+body {
+  background: var(--felt-deep);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px 28px;
+  -webkit-user-select: none; user-select: none;
+}
+.app { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; touch-action: manipulation; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--chalk); outline-offset: 2px; }
+.num { font-family: var(--font-display); font-variant-numeric: tabular-nums; }
+
+/* Cabecera */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.top-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.icon-btn.labeled { width: auto; min-width: 52px; height: 50px; padding: 4px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; color: var(--muted); }
+.icon-btn.labeled svg { width: 20px; height: 20px; }
+.icon-btn.armed { border-color: var(--danger); background: rgba(239, 106, 90, .16); color: var(--danger); }
+.icon-btn.armed svg { stroke: var(--danger); }
+.top .frame-info { display: flex; flex-direction: column; line-height: 1.25; margin-left: 2px; white-space: nowrap; }
+.top .frame-info { font-family: var(--font-display); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.top .frame-info b { color: var(--ink); font-weight: 600; }
+.icon-btn { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: var(--felt); border: 1px solid var(--line); }
+.icon-btn svg { width: 22px; height: 22px; stroke: var(--ink); fill: none; stroke-width: 2; stroke-linecap: round; }
+
+/* Jugadores */
+.players { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.player {
+  text-align: left; padding: 12px 14px 12px; border-radius: 16px;
+  background: var(--felt); border: 2px solid transparent;
+  display: flex; flex-direction: column; gap: 2px; min-width: 0; position: relative;
+}
+.player.active { border-color: var(--chalk); background: var(--felt-raised); }
+.player .name { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 30px; }
+.player .frames { position: absolute; top: 10px; right: 12px; font-family: var(--font-display); font-size: 18px; font-weight: 600; color: var(--muted); }
+.player .score { font-family: var(--font-display); font-weight: 700; font-size: 64px; line-height: 1; font-variant-numeric: tabular-nums; }
+.player .meta { font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 2px 10px; }
+.player .meta b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.player .need { font-size: 12.5px; color: var(--warn); font-weight: 600; min-height: 1.2em; }
+.player .won { font-size: 12.5px; color: var(--win); font-weight: 600; line-height: 1.3; margin-bottom: 2px; }
+.player .turn-dot { display: none; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--chalk); font-weight: 600; }
+.player.active .turn-dot { display: block; }
+
+/* Mesa: resumen */
+.table {
+  background: radial-gradient(120% 90% at 50% 0%, var(--felt-raised), var(--felt) 70%);
+  border: 6px solid var(--cushion); border-radius: 20px; padding: 14px 14px 16px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.summary { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+.maxbox { display: flex; flex-direction: column; }
+.maxbox .label, .stat .label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.maxbox .value { font-family: var(--font-display); font-size: 56px; font-weight: 700; line-height: .95; font-variant-numeric: tabular-nums; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.stat .value { font-family: var(--font-display); font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.phase { font-size: 13.5px; color: var(--ink); background: rgba(0,0,0,.22); border-radius: 10px; padding: 8px 12px; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.phase .on { font-weight: 600; }
+.phase .brk { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.phase .brk b { color: var(--ink); font-family: var(--font-display); font-size: 18px; }
+
+/* Bolas */
+.balls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 10px; justify-items: center; }
+.ball {
+  width: 100%; max-width: 76px; aspect-ratio: 1; border-radius: 50%; position: relative;
+  display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 700; font-size: 26px;
+  box-shadow: inset -6px -8px 14px rgba(0,0,0,.45), 0 4px 8px rgba(0,0,0,.35);
+  transition: transform .08s ease, opacity .15s ease;
+}
+.ball::after { content: ""; position: absolute; width: 26%; height: 20%; left: 24%; top: 16%; border-radius: 50%; background: rgba(255,255,255,.55); filter: blur(1px); }
+.ball:active:not(:disabled) { transform: scale(.93); }
+.ball:disabled { opacity: .18; box-shadow: none; cursor: default; }
+.ball .pts { position: relative; z-index: 1; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.ball .count { position: absolute; z-index: 2; right: -4px; top: -4px; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px; background: var(--ink); color: var(--felt-deep); font-size: 15px; display: grid; place-items: center; font-weight: 700; }
+.b1 { background: radial-gradient(circle at 35% 30%, #ff5468, var(--b-red) 55%, #6d0817); color: #fff; }
+.b2 { background: radial-gradient(circle at 35% 30%, #fff19a, var(--b-yellow) 55%, #8a6a05); color: #3b2c00; }
+.b2 .pts { text-shadow: none; }
+.b3 { background: radial-gradient(circle at 35% 30%, #63d690, var(--b-green) 55%, #0b4524); color: #fff; }
+.b4 { background: radial-gradient(circle at 35% 30%, #b97a48, var(--b-brown) 55%, #3a1f0c); color: #fff; }
+.b5 { background: radial-gradient(circle at 35% 30%, #6ea3f5, var(--b-blue) 55%, #0b2c63); color: #fff; }
+.b6 { background: radial-gradient(circle at 35% 30%, #ffd3e3, var(--b-pink) 55%, #a24a6c); color: #4a1027; }
+.b6 .pts { text-shadow: none; }
+.b7 { background: radial-gradient(circle at 35% 30%, #6a6a6a, var(--b-black) 55%, #000); color: #fff; }
+.bfb { background: repeating-linear-gradient(45deg, #e8e8e8 0 6px, #bdbdbd 6px 12px); color: #222; }
+.ball.next-on { outline: 3px solid var(--chalk); outline-offset: 3px; }
+.slot-label { font-size: 11px; color: var(--muted); text-align: center; margin-top: 4px; letter-spacing: .04em; }
+.ball-wrap { display: flex; flex-direction: column; align-items: center; width: 100%; }
+
+.freeball { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(124,196,234,.12); border: 1px dashed var(--chalk); }
+.freeball p { margin: 0; font-size: 13.5px; }
+.freeball button { padding: 10px 14px; border-radius: 10px; background: var(--chalk); color: var(--felt-deep); font-weight: 600; white-space: nowrap; }
+
+/* Racha actual */
+.breakline { display: flex; flex-wrap: wrap; gap: 4px; min-height: 16px; }
+.dot { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset -2px -2px 3px rgba(0,0,0,.4); }
+
+/* Acciones */
+.actions { display: grid; grid-template-columns: 1.3fr 1fr; gap: 10px; }
+.actions .wide { grid-column: 1 / -1; }
+.btn { min-height: 54px; border-radius: 14px; font-weight: 600; font-size: 16px; padding: 0 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-primary { background: var(--ink); color: var(--felt-deep); }
+.btn-foul { background: var(--danger); color: #2a0703; }
+.btn-ghost { background: var(--felt); border: 1px solid var(--line); }
+.btn:disabled { opacity: .35; }
+
+/* Historial */
+.log h2, .sheet h2, .sheet h3 { font-family: var(--font-display); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; margin: 0; }
+.log h2 { font-size: 15px; color: var(--muted); margin-bottom: 6px; }
+.log ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.log li { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+.log li span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.log li.foul span:first-child { color: var(--danger); }
+.log .empty { color: var(--muted); font-size: 13.5px; }
+
+/* Hojas modales */
+.scrim { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 20; }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 21;
+  max-height: 88%; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: var(--felt); border-top: 1px solid var(--line); border-radius: 22px 22px 0 0;
+  padding-top: 18px;
+  padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(18px, env(safe-area-inset-left, 0px));
+  padding-right: max(18px, env(safe-area-inset-right, 0px));
+}
+.sheet-inner { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.sheet h2 { font-size: 22px; }
+.sheet h3 { font-size: 14px; color: var(--muted); }
+.sheet .hint { font-size: 13px; color: var(--muted); margin: 0; line-height: 1.45; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+.seg button { min-height: 52px; border-radius: 12px; background: var(--felt-deep); border: 2px solid transparent; font-family: var(--font-display); font-size: 24px; font-weight: 700; }
+.seg button[aria-pressed="true"] { border-color: var(--chalk); background: var(--felt-raised); }
+.choice { display: flex; flex-direction: column; gap: 8px; }
+.choice button { text-align: left; padding: 12px 14px; border-radius: 12px; background: var(--felt-deep); border: 2px solid transparent; display: flex; flex-direction: column; gap: 2px; }
+.choice button small { color: var(--muted); font-size: 12.5px; }
+.choice button[aria-pressed="true"] { border-color: var(--chalk); background: var(--felt-raised); }
+.stepper { display: flex; align-items: center; gap: 14px; }
+.stepper button { width: 46px; height: 46px; border-radius: 12px; background: var(--felt-deep); font-size: 24px; font-weight: 600; }
+.stepper .num { font-size: 30px; font-weight: 700; min-width: 2ch; text-align: center; }
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--felt-deep); }
+.toggle input { width: 24px; height: 24px; accent-color: var(--chalk); }
+.row { display: flex; gap: 10px; }
+.row > * { flex: 1; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 12px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
+.field input, .field select { font: inherit; font-size: 16px; color: var(--ink); background: var(--felt-deep); border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; width: 100%; -webkit-user-select: text; user-select: text; }
+.adjust { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; }
+.adjust .stepper button { width: 40px; height: 40px; }
+.adjust .stepper .num { font-size: 22px; }
+.rules { font-size: 13.5px; line-height: 1.5; color: var(--ink); }
+.rules ul { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.rules b { color: var(--chalk); font-weight: 600; }
+details summary { cursor: pointer; font-family: var(--font-display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-size: 14px; font-weight: 600; }
+
+.result { text-align: center; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.result .big { font-family: var(--font-display); font-size: 40px; font-weight: 700; line-height: 1.05; text-wrap: balance; }
+.result .sc { font-family: var(--font-display); font-size: 30px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.confirm-row { display: flex; gap: 10px; }
+.confirm-row .btn { flex: 1; }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--felt-deep); padding: 10px 16px; border-radius: 999px; font-weight: 600; font-size: 14px; z-index: 30; max-width: calc(100% - 32px); text-align: center; }
+
+@media (max-width: 360px) {
+  .player .score { font-size: 52px; }
+  .maxbox .value { font-size: 46px; }
+  .stat .value { font-size: 20px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app" id="app">
+  <header class="top">
+    <div class="top-left">
+      <button class="icon-btn labeled" id="resetMatchTop" aria-label="Resetear partida" title="Resetear partida">
+        <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></svg>
+        <span>Partida</span>
+      </button>
+      <button class="icon-btn labeled" id="resetFrameTop" aria-label="Reiniciar mesa" title="Reiniciar mesa">
+        <svg viewBox="0 0 24 24"><path d="M12 4 3 19h18z"/><circle cx="12" cy="14" r="2"/></svg>
+        <span>Mesa</span>
+      </button>
+      <div class="frame-info" id="frameInfo"><span>Frame <b>1</b></span><span>Al mejor de <b>5</b></span></div>
+    </div>
+    <div class="row" style="flex:0 0 auto; gap:8px">
+      <button class="icon-btn" id="undoTop" aria-label="Deshacer última acción">
+        <svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+      </button>
+      <button class="icon-btn" id="menuBtn" aria-label="Menú de partida">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <section class="players" id="players"></section>
+
+  <section class="table" aria-label="Mesa">
+    <div class="summary">
+      <div class="maxbox">
+        <span class="label">Máximo en mesa</span>
+        <span class="value" id="maxVal">147</span>
+      </div>
+      <div class="stats">
+        <div class="stat"><span class="label">Rojas</span><span class="value" id="redsVal">15</span></div>
+        <div class="stat"><span class="label">Valor bolas</span><span class="value" id="valVal">42</span></div>
+        <div class="stat"><span class="label">Diferencia</span><span class="value" id="diffVal">0</span></div>
+      </div>
+    </div>
+    <div class="phase"><span class="on" id="phaseText">En roja</span><span class="brk">Tacada <b id="brkVal">0</b></span></div>
+    <div class="breakline" id="breakline" aria-label="Bolas de la tacada actual"></div>
+    <div class="freeball" id="freeBallBox" hidden>
+      <p><b>Bola libre</b> concedida. Embolsa la bola nominada.</p>
+      <button id="freeBallBtn">Bola libre +1</button>
+    </div>
+    <div class="balls" id="balls"></div>
+  </section>
+
+  <section class="actions">
+    <button class="btn btn-primary" id="endTurnBtn">Fin de turno</button>
+    <button class="btn btn-foul" id="foulBtn">Falta</button>
+    <button class="btn btn-ghost wide" id="undoBtn">Deshacer</button>
+  </section>
+
+  <section class="log">
+    <h2>Historial del frame</h2>
+    <ol id="logList"></ol>
+  </section>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+
+<!-- Falta -->
+<div class="sheet" id="foulSheet" hidden role="dialog" aria-labelledby="foulTitle">
+  <div class="sheet-inner">
+    <h2 id="foulTitle">Falta de <span id="foulWho">—</span></h2>
+    <div class="field">
+      <h3>Puntos para el rival</h3>
+      <div class="seg" id="foulVals"></div>
+      <p class="hint" id="foulHint">Mínimo 4, o el valor más alto entre la bola en juego, la bola tocada primero y las bolas embolsadas.</p>
+    </div>
+    <div class="field" id="foulRedsField">
+      <h3>Rojas embolsadas en la falta</h3>
+      <div class="stepper">
+        <button id="foulRedsMinus" aria-label="Una roja menos">−</button>
+        <span class="num" id="foulRedsVal">0</span>
+        <button id="foulRedsPlus" aria-label="Una roja más">+</button>
+      </div>
+      <p class="hint">Las rojas embolsadas en falta no se reponen. Los colores sí vuelven a su punto.</p>
+    </div>
+    <div class="field">
+      <h3>¿Quién juega ahora?</h3>
+      <div class="choice" id="foulNext">
+        <button data-v="opp" aria-pressed="true"><span>Juega el rival</span><small>Acepta la mesa tal como queda.</small></button>
+        <button data-v="again" aria-pressed="false"><span>Vuelve a tirar el infractor</span><small>El rival le obliga a jugar desde la posición resultante.</small></button>
+        <button data-v="miss" aria-pressed="false"><span>Falta y fallo (miss): reponer bolas</span><small>Se reponen las bolas y el infractor repite el golpe.</small></button>
+      </div>
+    </div>
+    <label class="toggle" id="foulFbRow" for="foulFb">
+      <span>Deja al rival snookeado: <b>bola libre</b></span>
+      <input type="checkbox" id="foulFb">
+    </label>
+    <div class="confirm-row">
+      <button class="btn btn-ghost" data-close>Cancelar</button>
+      <button class="btn btn-foul" id="foulConfirm">Anotar falta</button>
+    </div>
+  </div>
+</div>
+
+<!-- Menú -->
+<div class="sheet" id="menuSheet" hidden role="dialog" aria-labelledby="menuTitle">
+  <div class="sheet-inner">
+    <h2 id="menuTitle">Partida</h2>
+    <div class="row">
+      <div class="field"><label for="name0">Jugador 1</label><input id="name0" maxlength="20" autocomplete="off"></div>
+      <div class="field"><label for="name1">Jugador 2</label><input id="name1" maxlength="20" autocomplete="off"></div>
+    </div>
+    <div class="field">
+      <label for="bestOf">Partida al mejor de</label>
+      <select id="bestOf">
+        <option value="1">1 frame</option><option value="3">3 frames</option><option value="5">5 frames</option>
+        <option value="7">7 frames</option><option value="9">9 frames</option><option value="11">11 frames</option>
+        <option value="17">17 frames</option><option value="19">19 frames</option><option value="35">35 frames</option>
+      </select>
+    </div>
+
+    <h3>Conceder el frame</h3>
+    <div class="row" id="concedeRow"></div>
+
+    <h3>Corregir marcador</h3>
+    <div class="adjust" id="adjustBox"></div>
+
+    <h3>Reiniciar</h3>
+    <div class="row">
+      <button class="btn btn-ghost" id="restartFrame">Reiniciar mesa</button>
+      <button class="btn btn-ghost" id="newMatch">Resetear partida</button>
+    </div>
+    <p class="hint" id="resetConfirmHint" hidden></p>
+
+    <details class="rules">
+      <summary>Reglas que aplica el marcador</summary>
+      <ul>
+        <li><b>Valores:</b> roja 1, amarilla 2, verde 3, marrón 4, azul 5, rosa 6, negra 7. Con 15 rojas el máximo es 147.</li>
+        <li><b>Mientras quedan rojas</b> se alterna roja y color. El color embolsado se repone. Varias rojas en el mismo golpe valen 1 punto cada una (usa la roja otra vez antes del color).</li>
+        <li><b>Tras la última roja</b> se puede tirar cualquier color y después los colores en orden: amarilla, verde, marrón, azul, rosa y negra.</li>
+        <li><b>Máximo en mesa:</b> si toca roja, rojas × 8 + 27; si toca color tras una roja, se suman 7 más; en la secuencia final, la suma de los colores que quedan.</li>
+        <li><b>Faltas:</b> valen 4 puntos como mínimo, o el valor de la bola en juego, de la bola tocada o de la embolsada si es mayor (máximo 7). Los puntos son para el rival y la tacada termina.</li>
+        <li><b>Tras una falta</b> el rival elige jugar o hacer repetir al infractor. Si el árbitro canta <b>miss</b>, puede pedir reponer las bolas.</li>
+        <li><b>Bola libre:</b> si tras la falta el rival queda snookeado, puede nominar cualquier bola como si fuera la bola en juego. Vale lo mismo que esa bola (1 si toca roja). No hay bola libre si se obliga al infractor a repetir.</li>
+        <li><b>Snookers necesarios:</b> cuando la diferencia supera el máximo que queda, el jugador que va detrás necesita que el rival cometa faltas.</li>
+        <li><b>Última negra:</b> con solo la negra en mesa, el primer tanto o falta acaba el frame. Si hay empate, la negra se recoloca y se juega a muerte súbita.</li>
+      </ul>
+    </details>
+    <button class="btn btn-primary" data-close>Cerrar</button>
+  </div>
+</div>
+
+<!-- Fin de frame -->
+<div class="sheet" id="endSheet" hidden role="dialog" aria-labelledby="endTitle">
+  <div class="sheet-inner">
+    <div class="result">
+      <span class="label" style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)" id="endKicker">Frame terminado</span>
+      <span class="big" id="endTitle">—</span>
+      <span class="sc" id="endScore">0 – 0</span>
+      <span class="hint" id="endFrames"></span>
+    </div>
+    <div class="confirm-row">
+      <button class="btn btn-ghost" id="endUndo">Deshacer</button>
+      <button class="btn btn-primary" id="endNext">Siguiente frame</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  const NAMES = { 1: 'Roja', 2: 'Amarilla', 3: 'Verde', 4: 'Marrón', 5: 'Azul', 6: 'Rosa', 7: 'Negra' };
+  const DOT = { 1: 'var(--b-red)', 2: 'var(--b-yellow)', 3: 'var(--b-green)', 4: 'var(--b-brown)', 5: 'var(--b-blue)', 6: 'var(--b-pink)', 7: 'var(--b-black)', fb: '#d0d0d0' };
+  const KEY = 'snooker-marcador-v1';
+
+  const sumFrom = n => { let s = 0; for (let v = n; v <= 7; v++) s += v; return s; };
+
+  function newFrame(breaker) {
+    return { scores: [0, 0], reds: 15, phase: 'red', next: 2, turn: breaker, brk: [], freeBall: false, log: [], winner: null };
+  }
+  function newMatch(prev) {
+    return {
+      players: [
+        { name: prev ? prev.players[0].name : 'Jugador 1', frames: 0, high: 0 },
+        { name: prev ? prev.players[1].name : 'Jugador 2', frames: 0, high: 0 }
+      ],
+      bestOf: prev ? prev.bestOf : 5, frameNo: 1, breaker: 0, matchWinner: null, frame: newFrame(0)
+    };
+  }
+
+  let S, history = [];
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (saved && saved.S) { S = saved.S; history = saved.history || []; }
+  } catch (e) {}
+  const hotData = window.claude?.hot?.data;
+  if (hotData && hotData.S) { S = hotData.S; history = hotData.history || []; }
+  if (!S) S = newMatch();
+  window.claude?.hot?.snapshot?.(() => ({ S, history }));
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify({ S, history: history.slice(-150) })); } catch (e) {} }
+
+  /* ---------- Cálculos ---------- */
+  // Máximo que puede sumar el jugador i si llega (o sigue) en la mesa ahora.
+  function maxFor(f, i) {
+    if (f.phase === 'over') return 0;
+    const atTable = i === f.turn;
+    let m;
+    switch (f.phase) {
+      case 'red': m = f.reds * 8 + 27; break;
+      case 'colour': m = atTable ? 7 + f.reds * 8 + 27 : (f.reds > 0 ? f.reds * 8 + 27 : 27); break;
+      case 'sequence': m = sumFrom(f.next); break;
+      case 'respot': m = 7; break;
+    }
+    if (atTable && f.freeBall) m += f.phase === 'red' ? 8 : f.phase === 'sequence' ? f.next : 0;
+    return m;
+  }
+  function tableValue(f) {
+    if (f.phase === 'over') return 0;
+    if (f.phase === 'red' || f.phase === 'colour') return f.reds + 27;
+    if (f.phase === 'respot') return 7;
+    return sumFrom(f.next);
+  }
+  const brkTotal = f => f.brk.reduce((a, b) => a + b.v, 0);
+  const minFoul = f => (f.phase === 'sequence' ? Math.max(4, f.next) : f.phase === 'respot' ? 7 : 4);
+
+  /* ---------- Acciones ---------- */
+  function act(fn) {
+    history.push(JSON.stringify(S));
+    if (history.length > 300) history.shift();
+    fn(S.frame);
+    save(); render();
+  }
+  function log(f, text, pts, cls) { f.log.unshift({ t: text, p: pts, c: cls || '' }); }
+  const nm = i => S.players[i].name;
+
+  function closeBreak(f) {
+    const t = brkTotal(f);
+    if (t > S.players[f.turn].high) S.players[f.turn].high = t;
+    f.brk = [];
+  }
+  function endFrame(f, w) {
+    closeBreak(f);
+    f.phase = 'over'; f.winner = w; f.freeBall = false;
+    S.players[w].frames++;
+    if (S.players[w].frames > S.bestOf / 2) S.matchWinner = w;
+  }
+  function endFrameCheck(f) {
+    if (f.scores[0] !== f.scores[1]) endFrame(f, f.scores[0] > f.scores[1] ? 0 : 1);
+    else {
+      closeBreak(f);
+      f.phase = 'respot'; f.next = 7; f.freeBall = false;
+      log(f, 'Empate: negra recolocada, se sortea quién tira', '');
+      toast('Empate: se recoloca la negra');
+    }
+  }
+
+  function potRed() {
+    act(f => {
+      f.scores[f.turn] += 1; f.reds -= 1;
+      f.brk.push({ v: 1, b: 1 });
+      f.phase = 'colour'; f.freeBall = false;
+      log(f, `${nm(f.turn)}: roja`, '+1');
+    });
+  }
+  function potColour(v) {
+    act(f => {
+      const t = f.turn;
+      f.scores[t] += v; f.brk.push({ v, b: v }); f.freeBall = false;
+      log(f, `${nm(t)}: ${NAMES[v].toLowerCase()}`, '+' + v);
+      if (f.phase === 'colour') {
+        if (f.reds > 0) f.phase = 'red'; else { f.phase = 'sequence'; f.next = 2; }
+      } else if (f.phase === 'sequence') {
+        f.next++;
+        if (f.next > 7) endFrameCheck(f);
+      } else if (f.phase === 'respot') {
+        endFrame(f, t);
+      }
+    });
+  }
+  function potFreeBall() {
+    act(f => {
+      const v = f.phase === 'red' ? 1 : f.next;
+      f.scores[f.turn] += v; f.brk.push({ v, b: 'fb' });
+      if (f.phase === 'red') f.phase = 'colour';
+      f.freeBall = false;
+      log(f, `${nm(f.turn)}: bola libre`, '+' + v);
+    });
+  }
+  function endTurn() {
+    act(f => {
+      const t = brkTotal(f);
+      closeBreak(f);
+      if (f.phase === 'colour') { if (f.reds > 0) f.phase = 'red'; else { f.phase = 'sequence'; f.next = 2; } }
+      log(f, `${nm(f.turn)} termina turno` + (t ? ` (tacada ${t})` : ''), '');
+      f.turn = 1 - f.turn; f.freeBall = false;
+    });
+  }
+  function foul({ value, reds, mode, fb }) {
+    act(f => {
+      const off = f.turn, opp = 1 - off, prev = f.phase;
+      const onlyBlack = (prev === 'sequence' && f.next === 7) || prev === 'respot';
+      f.scores[opp] += value;
+      closeBreak(f);
+      let txt = `Falta de ${nm(off)}`;
+      if (mode === 'miss') {
+        txt += ' · miss, se reponen bolas';
+      } else {
+        if (reds > 0 && (prev === 'red' || prev === 'colour')) { f.reds -= reds; txt += ` · ${reds} roja${reds > 1 ? 's' : ''} fuera`; }
+        if (prev === 'red' || prev === 'colour') {
+          if (f.reds > 0) f.phase = 'red'; else { f.phase = 'sequence'; f.next = 2; }
+        }
+        if (mode === 'opp') f.turn = opp;
+        else txt += ' · repite';
+      }
+      f.freeBall = mode === 'opp' && !!fb && !onlyBlack;
+      if (f.freeBall) txt += ' · bola libre';
+      log(f, txt, `+${value} ${nm(opp)}`, 'foul');
+      if (onlyBlack) endFrameCheck(f);
+    });
+  }
+
+  function undo() {
+    if (!history.length) { toast('No hay nada que deshacer'); return; }
+    S = JSON.parse(history.pop());
+    save(); closeSheets(); render();
+  }
+
+  /* ---------- Render ---------- */
+  const $ = id => document.getElementById(id);
+
+  function phaseLabel(f) {
+    if (f.phase === 'over') return `Frame para ${nm(f.winner)}`;
+    const who = nm(f.turn);
+    if (f.phase === 'red') return `${who} · en roja`;
+    if (f.phase === 'colour') return `${who} · en color${f.reds === 0 ? ' (tras la última roja)' : ''}`;
+    if (f.phase === 'sequence') return `${who} · en ${NAMES[f.next].toLowerCase()}`;
+    if (f.phase === 'respot') return `${who} · negra recolocada`;
+  }
+
+  function render() {
+    const f = S.frame;
+    $('frameInfo').innerHTML = `<span>Frame <b>${S.frameNo}</b></span><span>Al mejor de <b>${S.bestOf}</b></span>`;
+
+    // Jugadores
+    const pl = $('players'); pl.innerHTML = '';
+    [0, 1].forEach(i => {
+      const p = S.players[i];
+      const b = document.createElement('button');
+      b.className = 'player' + (f.turn === i && f.phase !== 'over' ? ' active' : '');
+      b.setAttribute('aria-label', `${p.name}, ${f.scores[i]} puntos` + (f.turn === i ? ', al tiro' : ', tocar para pasarle el turno'));
+      const mx = maxFor(f, i);
+      const deficit = f.scores[1 - i] - f.scores[i] - mx;
+      let need = '';
+      // Para ganar necesita superar al rival: deficit + 1 puntos de faltas, cada snooker vale la falta mínima (4 o la bola en juego).
+      if (f.phase !== 'over' && deficit >= 0 && f.scores[1 - i] > f.scores[i]) {
+        const per = minFoul(f), toWin = deficit + 1;
+        const n = Math.ceil(toWin / per);
+        need = `Necesita ${n} snooker${n > 1 ? 's' : ''} de ${per} pts (le faltan ${toWin} para ganar)`;
+      }
+      // Frame ganado: el rival ya no puede superar esta puntuación sin faltas a su favor.
+      const oppMax = f.scores[1 - i] + maxFor(f, 1 - i);
+      let won = '';
+      if (f.phase !== 'over' && f.scores[i] > oppMax) won = `Frame ganado salvo faltas: el rival llega como máximo a ${oppMax}`;
+      else if (f.phase !== 'over' && f.scores[i] > 0 && f.scores[i] === oppMax) won = `El rival solo puede empatar a ${oppMax} sin faltas`;
+      b.innerHTML = `
+        <span class="turn-dot">Al tiro</span>
+        <span class="name"></span>
+        <span class="frames num">${p.frames}</span>
+        <span class="score">${f.scores[i]}</span>
+        ${won ? `<span class="won">${won}</span>` : ''}
+        <span class="meta"><span>Máx. <b>${f.scores[i] + mx}</b></span><span>Mejor tacada <b>${p.high}</b></span></span>
+        <span class="need">${need}</span>`;
+      b.querySelector('.name').textContent = p.name;
+      b.addEventListener('click', () => {
+        if (f.phase === 'over' || f.turn === i) return;
+        endTurn();
+      });
+      pl.appendChild(b);
+    });
+
+    // Resumen
+    $('maxVal').textContent = maxFor(f, f.turn);
+    $('redsVal').textContent = f.reds;
+    $('valVal').textContent = tableValue(f);
+    $('diffVal').textContent = Math.abs(f.scores[0] - f.scores[1]);
+    $('phaseText').textContent = phaseLabel(f);
+    $('brkVal').textContent = brkTotal(f);
+    const bl = $('breakline'); bl.innerHTML = '';
+    f.brk.forEach(x => { const d = document.createElement('span'); d.className = 'dot'; d.style.background = DOT[x.b]; bl.appendChild(d); });
+
+    // Bola libre
+    $('freeBallBox').hidden = !f.freeBall;
+    if (f.freeBall) $('freeBallBtn').textContent = `Bola libre +${f.phase === 'red' ? 1 : f.next}`;
+
+    // Bolas
+    const wrap = $('balls'); wrap.innerHTML = '';
+    const lastWasRed = f.brk.length && f.brk[f.brk.length - 1].b === 1;
+    for (let v = 1; v <= 7; v++) {
+      let enabled = false, nextOn = false, label = '';
+      if (v === 1) {
+        enabled = f.reds > 0 && (f.phase === 'red' || (f.phase === 'colour' && lastWasRed));
+        nextOn = f.phase === 'red';
+        label = f.phase === 'colour' && enabled ? 'otra en el golpe' : 'Roja';
+      } else {
+        if (f.phase === 'colour') enabled = true;
+        else if (f.phase === 'sequence') { enabled = v === f.next; nextOn = enabled; }
+        else if (f.phase === 'respot') { enabled = v === 7; nextOn = enabled; }
+        const offTable = (f.phase === 'sequence' && v < f.next) || (f.phase === 'respot' && v < 7) || f.phase === 'over';
+        label = offTable ? 'fuera' : NAMES[v];
+      }
+      const w = document.createElement('div'); w.className = 'ball-wrap';
+      const b = document.createElement('button');
+      b.className = `ball b${v}` + (nextOn ? ' next-on' : '');
+      b.disabled = !enabled;
+      b.setAttribute('aria-label', `${NAMES[v]}, ${v} punto${v > 1 ? 's' : ''}`);
+      b.innerHTML = `<span class="pts">${v}</span>` + (v === 1 ? `<span class="count">${f.reds}</span>` : '');
+      b.addEventListener('click', () => (v === 1 ? potRed() : potColour(v)));
+      const l = document.createElement('span'); l.className = 'slot-label'; l.textContent = label;
+      w.append(b, l); wrap.appendChild(w);
+    }
+    // Hueco 8: atajo para fin de turno visual con el número de puntos en mesa
+    const info = document.createElement('div'); info.className = 'ball-wrap';
+    info.innerHTML = `<div class="ball" style="background:var(--felt-deep);box-shadow:none;border:2px dashed var(--line);font-size:15px;color:var(--muted)" aria-hidden="true"><span class="pts" style="text-shadow:none">${f.phase === 'over' ? '—' : tableValue(f)}</span></div><span class="slot-label">pts en mesa</span>`;
+    wrap.appendChild(info);
+
+    const over = f.phase === 'over';
+    $('endTurnBtn').disabled = over;
+    $('foulBtn').disabled = over;
+    $('undoBtn').disabled = !history.length;
+    $('undoTop').disabled = !history.length;
+
+    // Historial
+    const ll = $('logList'); ll.innerHTML = '';
+    if (!f.log.length) ll.innerHTML = '<li class="empty">Aún no hay jugadas en este frame. Toca una bola para anotar.</li>';
+    f.log.slice(0, 40).forEach(e => {
+      const li = document.createElement('li'); if (e.c) li.className = e.c;
+      const a = document.createElement('span'); a.textContent = e.t;
+      const b = document.createElement('span'); b.textContent = e.p;
+      li.append(a, b); ll.appendChild(li);
+    });
+
+    // Fin de frame
+    if (over) showEnd(); else if (!$('endSheet').hidden) closeSheets();
+  }
+
+  /* ---------- Hojas ---------- */
+  function openSheet(id) { closeSheets(); $('scrim').hidden = false; $(id).hidden = false; }
+  function closeSheets() { ['foulSheet', 'menuSheet', 'endSheet'].forEach(id => ($(id).hidden = true)); $('scrim').hidden = true; resetPending = null; $('resetConfirmHint').hidden = true; }
+  $('scrim').addEventListener('click', () => { if (S.frame.phase !== 'over') closeSheets(); });
+  document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeSheets));
+
+  // Falta
+  let FD = {};
+  function openFoul() {
+    const f = S.frame;
+    FD = { value: minFoul(f), reds: 0, mode: 'opp', fb: false };
+    $('foulWho').textContent = nm(f.turn);
+    const min = minFoul(f);
+    const seg = $('foulVals'); seg.innerHTML = '';
+    for (let v = 4; v <= 7; v++) {
+      const b = document.createElement('button'); b.textContent = v; b.className = 'num';
+      b.disabled = v < min; if (v < min) b.style.opacity = .3;
+      b.addEventListener('click', () => { FD.value = v; syncFoul(); });
+      seg.appendChild(b);
+    }
+    $('foulHint').textContent = f.phase === 'sequence' || f.phase === 'respot'
+      ? `La bola en juego es la ${NAMES[f.next].toLowerCase()}: la falta vale al menos ${min}.`
+      : 'Mínimo 4, o el valor más alto entre la bola en juego, la bola tocada primero y las bolas embolsadas.';
+    $('foulFb').checked = false;
+    syncFoul();
+    openSheet('foulSheet');
+  }
+  function syncFoul() {
+    const f = S.frame;
+    [...$('foulVals').children].forEach(b => b.setAttribute('aria-pressed', String(+b.textContent === FD.value)));
+    [...$('foulNext').children].forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === FD.mode)));
+    const redsOn = (f.phase === 'red' || f.phase === 'colour') && f.reds > 0 && FD.mode !== 'miss';
+    $('foulRedsField').hidden = !redsOn;
+    if (!redsOn) FD.reds = 0;
+    $('foulRedsVal').textContent = FD.reds;
+    const onlyBlack = (f.phase === 'sequence' && f.next === 7) || f.phase === 'respot';
+    $('foulFbRow').hidden = FD.mode !== 'opp' || onlyBlack;
+  }
+  $('foulRedsMinus').addEventListener('click', () => { FD.reds = Math.max(0, FD.reds - 1); syncFoul(); });
+  $('foulRedsPlus').addEventListener('click', () => { FD.reds = Math.min(S.frame.reds, FD.reds + 1); syncFoul(); });
+  $('foulNext').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { FD.mode = b.dataset.v; syncFoul(); } });
+  $('foulFb').addEventListener('change', e => { FD.fb = e.target.checked; });
+  $('foulConfirm').addEventListener('click', () => { const d = { ...FD }; closeSheets(); foul(d); });
+
+  // Menú
+  let resetPending = null;
+  function openMenu() {
+    $('name0').value = S.players[0].name; $('name1').value = S.players[1].name;
+    $('bestOf').value = String(S.bestOf);
+    const f = S.frame;
+    const cr = $('concedeRow'); cr.innerHTML = '';
+    [0, 1].forEach(i => {
+      const b = document.createElement('button'); b.className = 'btn btn-ghost';
+      b.textContent = `Concede ${nm(i)}`; b.disabled = f.phase === 'over';
+      b.addEventListener('click', () => { closeSheets(); act(fr => { log(fr, `${nm(i)} concede el frame`, ''); endFrame(fr, 1 - i); }); });
+      cr.appendChild(b);
+    });
+    renderAdjust();
+    openSheet('menuSheet');
+  }
+  function renderAdjust() {
+    const f = S.frame, box = $('adjustBox'); box.innerHTML = '';
+    const rows = [
+      [`Puntos ${nm(0)}`, f.scores[0], d => act(fr => { fr.scores[0] = Math.max(0, fr.scores[0] + d); log(fr, `Ajuste manual ${nm(0)}`, (d > 0 ? '+' : '') + d); })],
+      [`Puntos ${nm(1)}`, f.scores[1], d => act(fr => { fr.scores[1] = Math.max(0, fr.scores[1] + d); log(fr, `Ajuste manual ${nm(1)}`, (d > 0 ? '+' : '') + d); })],
+      ['Rojas en mesa', f.reds, d => act(fr => {
+        if (fr.phase !== 'red' && fr.phase !== 'colour' && !(d > 0 && fr.phase === 'sequence' && fr.next === 2)) return;
+        fr.reds = Math.min(15, Math.max(0, fr.reds + d));
+        if (fr.phase === 'sequence' && fr.reds > 0) fr.phase = 'red';
+        if (fr.reds === 0 && fr.phase === 'red') { fr.phase = 'sequence'; fr.next = 2; }
+        log(fr, 'Ajuste manual de rojas', (d > 0 ? '+' : '') + d);
+      })]
+    ];
+    rows.forEach(([label, val, fn]) => {
+      const l = document.createElement('span'); l.textContent = label;
+      const st = document.createElement('div'); st.className = 'stepper';
+      st.innerHTML = `<button aria-label="Restar">−</button><span class="num">${val}</span><button aria-label="Sumar">+</button>`;
+      const [m, , p] = st.children;
+      m.addEventListener('click', () => { fn(-1); renderAdjust(); });
+      p.addEventListener('click', () => { fn(1); renderAdjust(); });
+      box.append(l, st);
+    });
+  }
+  ['name0', 'name1'].forEach((id, i) => $(id).addEventListener('input', e => {
+    S.players[i].name = e.target.value.trim() || `Jugador ${i + 1}`; save(); render();
+  }));
+  $('bestOf').addEventListener('change', e => { S.bestOf = +e.target.value; save(); render(); });
+  function askReset(kind, msg, fn) {
+    if (resetPending === kind) { fn(); closeSheets(); return; }
+    resetPending = kind;
+    const h = $('resetConfirmHint'); h.hidden = false; h.textContent = msg;
+  }
+  // Reiniciar la mesa: el frame actual vuelve a 15 rojas y 0–0. Si ya estaba terminado, se le quita el frame al ganador.
+  function restartFrame() {
+    history.push(JSON.stringify(S));
+    const f = S.frame;
+    if (f.phase === 'over' && f.winner !== null) { S.players[f.winner].frames--; S.matchWinner = null; }
+    S.frame = newFrame(S.breaker);
+    closeSheets(); save(); render(); toast('Mesa reiniciada');
+  }
+  function resetMatch() {
+    history.push(JSON.stringify(S));
+    S = newMatch(S);
+    closeSheets(); save(); render(); toast('Partida reseteada');
+  }
+  $('restartFrame').addEventListener('click', () => askReset('frame', 'Toca otra vez "Reiniciar mesa" para empezar este frame de cero.', restartFrame));
+  $('newMatch').addEventListener('click', () => askReset('match', 'Toca otra vez "Resetear partida" para poner frames y puntos a cero.', resetMatch));
+
+  // Botones de la cabecera: el primer toque arma el botón y el segundo, en 3 segundos, lo ejecuta.
+  let armed = null, armTimer;
+  function disarm() { armed = null; clearTimeout(armTimer); document.querySelectorAll('.icon-btn.armed').forEach(b => b.classList.remove('armed')); }
+  function armOrRun(btn, kind, msg, fn) {
+    if (armed === kind) { disarm(); fn(); return; }
+    disarm(); armed = kind; btn.classList.add('armed'); toast(msg);
+    armTimer = setTimeout(disarm, 3000);
+  }
+  $('resetMatchTop').addEventListener('click', e => armOrRun(e.currentTarget, 'match', 'Toca otra vez para resetear la partida', resetMatch));
+  $('resetFrameTop').addEventListener('click', e => armOrRun(e.currentTarget, 'frame', 'Toca otra vez para reiniciar la mesa', restartFrame));
+
+  // Fin de frame
+  function showEnd() {
+    const f = S.frame, w = f.winner;
+    $('endKicker').textContent = S.matchWinner !== null ? 'Partida terminada' : `Frame ${S.frameNo} terminado`;
+    $('endTitle').textContent = S.matchWinner !== null ? `${nm(S.matchWinner)} gana la partida` : `Frame para ${nm(w)}`;
+    $('endScore').textContent = `${f.scores[0]} – ${f.scores[1]}`;
+    $('endFrames').textContent = `Frames: ${nm(0)} ${S.players[0].frames} – ${S.players[1].frames} ${nm(1)}`;
+    $('endNext').textContent = S.matchWinner !== null ? 'Nueva partida' : 'Siguiente frame';
+    if ($('endSheet').hidden) openSheet('endSheet');
+  }
+  $('endNext').addEventListener('click', () => {
+    history.push(JSON.stringify(S));
+    if (S.matchWinner !== null) S = newMatch(S);
+    else { S.frameNo++; S.breaker = 1 - S.breaker; S.frame = newFrame(S.breaker); }
+    closeSheets(); save(); render();
+  });
+  $('endUndo').addEventListener('click', undo);
+
+  // Botones principales
+  $('endTurnBtn').addEventListener('click', endTurn);
+  $('foulBtn').addEventListener('click', openFoul);
+  $('undoBtn').addEventListener('click', undo);
+  $('undoTop').addEventListener('click', undo);
+  $('menuBtn').addEventListener('click', openMenu);
+  $('freeBallBtn').addEventListener('click', potFreeBall);
+
+  let toastTimer;
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 2200); }
+
+  // Mantener la pantalla encendida durante la partida, si el navegador lo permite
+  let wake = null;
+  async function keepAwake() { try { if (!wake && navigator.wakeLock) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => (wake = null)); } } catch (e) {} }
+  document.addEventListener('pointerdown', keepAwake, { passive: true });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
+
+  window.__snooker = { get S() { return S; }, potRed, potColour, endTurn, foul, potFreeBall, maxFor, undo };
+  render();
+})();
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
+</html>
