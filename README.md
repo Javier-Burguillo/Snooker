@@ -11,7 +11,7 @@ Es una aplicación web sin servidor: un único `index.html` que funciona en el n
   - en roja: `rojas × 8 + 27`
   - en color tras una roja: `7 + rojas × 8 + 27`
   - en la secuencia final: la suma de los colores que quedan
-- **Valor de las bolas en mesa**, rojas restantes, diferencia entre jugadores y tacada actual.
+- **Valor de las bolas en mesa**, rojas restantes, diferencia entre jugadores y break actual.
 - **Faltas** de 4 a 7 puntos para el rival. En la secuencia final, el mínimo sube al valor de la bola en juego.
   - Rojas embolsadas en falta (no se reponen).
   - Elegir quién sigue: el rival, el infractor repite, o *falta y miss* con las bolas repuestas.
@@ -19,7 +19,7 @@ Es una aplicación web sin servidor: un único `index.html` que funciona en el n
 - **Snookers necesarios.** Indica cuántos snookers necesita el jugador que va detrás, cuánto vale cada uno y los puntos que le faltan para ganar.
 - **Frame ganado.** Avisa cuando el rival ya no puede superar la puntuación sin faltas a su favor, o solo puede empatar.
 - **Última negra y negra recolocada.** Con solo la negra en mesa, el primer tanto o falta decide el frame. Si hay empate, la negra se recoloca a muerte súbita.
-- **Partida a varios frames** (al mejor de 1 a 35), frames ganados y mejor tacada de cada jugador.
+- **Partida a varios frames** (al mejor de 1 a 35), frames ganados y mejor break de cada jugador.
 - **Deshacer** ilimitado, historial del frame, conceder el frame y corrección manual de puntos y rojas.
 - **Reiniciar mesa** y **resetear partida** desde la cabecera, con doble toque para confirmar.
 - La partida se guarda en el propio dispositivo y la pantalla se mantiene encendida mientras se juega.
@@ -68,7 +68,7 @@ Las partidas guardadas no se pierden al actualizar.
 | Rosa | 6 |
 | Negra | 7 |
 
-- Máxima tacada posible: **147** (15 rojas con 15 negras y todos los colores).
+- Break máximo posible: **147** (15 rojas con 15 negras y todos los colores).
 - Falta: mínimo **4 puntos**, o el valor de la bola en juego, la bola tocada primero o la embolsada si es mayor, hasta un máximo de **7**.
 - Los colores embolsados mientras quedan rojas se reponen; las rojas no.
 - La bola libre vale como la bola en juego (1 si toca roja) y no se concede si se obliga al infractor a repetir.

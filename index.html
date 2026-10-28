@@ -48,6 +48,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
 html, body { min-height: 100%; }
 body {
   background: var(--felt-deep);
@@ -59,7 +60,7 @@ body {
   padding-block: 12px 28px;
   -webkit-user-select: none; user-select: none;
 }
-.app { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.app { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
 button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; touch-action: manipulation; }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--chalk); outline-offset: 2px; }
 .num { font-family: var(--font-display); font-variant-numeric: tabular-nums; }
@@ -101,7 +102,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   border: 6px solid var(--cushion); border-radius: 20px; padding: 14px 14px 16px;
   display: flex; flex-direction: column; gap: 14px;
 }
-.summary { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+.summary { display: grid; grid-template-columns: auto 1fr; gap: 14px 28px; align-items: center; }
 .maxbox { display: flex; flex-direction: column; }
 .maxbox .label, .stat .label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .maxbox .value { font-family: var(--font-display); font-size: 56px; font-weight: 700; line-height: .95; font-variant-numeric: tabular-nums; }
@@ -150,7 +151,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .dot { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset -2px -2px 3px rgba(0,0,0,.4); }
 
 /* Acciones */
-.actions { display: grid; grid-template-columns: 1.3fr 1fr; gap: 10px; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .actions .wide { grid-column: 1 / -1; }
 .btn { min-height: 54px; border-radius: 14px; font-weight: 600; font-size: 16px; padding: 0 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .btn-primary { background: var(--ink); color: var(--felt-deep); }
@@ -220,6 +221,52 @@ details summary { cursor: pointer; font-family: var(--font-display); text-transf
   .maxbox .value { font-size: 46px; }
   .stat .value { font-size: 20px; }
 }
+/* iPad en vertical y pantallas medianas: una columna más ancha con todo más grande */
+@media (min-width: 700px) {
+  body { font-size: 16px; padding-block: 20px 36px; }
+  .app { max-width: 760px; gap: 18px; }
+  .top .frame-info { font-size: 16px; }
+  .players { gap: 14px; }
+  .player { padding: 16px 18px; border-radius: 18px; }
+  .player .name { font-size: 19px; }
+  .player .frames { font-size: 24px; top: 14px; right: 16px; }
+  .player .score { font-size: 96px; }
+  .player .meta, .player .need, .player .won { font-size: 14.5px; }
+  .table { padding: 20px 22px 22px; gap: 18px; border-width: 8px; border-radius: 24px; }
+  .summary { column-gap: 48px; }
+  .maxbox .value { font-size: 80px; }
+  .maxbox .label, .stat .label { font-size: 12.5px; }
+  .stat .value { font-size: 34px; }
+  .phase { font-size: 15.5px; padding: 10px 14px; }
+  .balls { gap: 18px 16px; }
+  .ball { max-width: 112px; font-size: 38px; }
+  .ball .count { min-width: 32px; height: 32px; border-radius: 16px; font-size: 18px; }
+  .slot-label { font-size: 13px; }
+  .dot { width: 18px; height: 18px; }
+  .btn { min-height: 64px; font-size: 18px; border-radius: 16px; }
+  .log li { font-size: 15px; }
+  .sheet { left: 50%; right: auto; width: min(620px, 100%); transform: translateX(-50%); }
+}
+
+/* iPad en horizontal: mesa a la izquierda; jugadores, botones e historial a la derecha */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .app {
+    max-width: 1280px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas: "top top" "table players" "table actions" "table log";
+    gap: 18px 24px;
+    align-items: start;
+  }
+  .top { grid-area: top; }
+  .players { grid-area: players; }
+  .table { grid-area: table; }
+  .actions { grid-area: actions; }
+  .log { grid-area: log; }
+  .player .score { font-size: 88px; }
+  .ball { max-width: 124px; }
+}
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
@@ -260,8 +307,8 @@ details summary { cursor: pointer; font-family: var(--font-display); text-transf
         <div class="stat"><span class="label">Diferencia</span><span class="value" id="diffVal">0</span></div>
       </div>
     </div>
-    <div class="phase"><span class="on" id="phaseText">En roja</span><span class="brk">Tacada <b id="brkVal">0</b></span></div>
-    <div class="breakline" id="breakline" aria-label="Bolas de la tacada actual"></div>
+    <div class="phase"><span class="on" id="phaseText">En roja</span><span class="brk">Break <b id="brkVal">0</b></span></div>
+    <div class="breakline" id="breakline" aria-label="Bolas del break actual"></div>
     <div class="freeball" id="freeBallBox" hidden>
       <p><b>Bola libre</b> concedida. Embolsa la bola nominada.</p>
       <button id="freeBallBtn">Bola libre +1</button>
@@ -357,7 +404,7 @@ details summary { cursor: pointer; font-family: var(--font-display); text-transf
         <li><b>Mientras quedan rojas</b> se alterna roja y color. El color embolsado se repone. Varias rojas en el mismo golpe valen 1 punto cada una (usa la roja otra vez antes del color).</li>
         <li><b>Tras la última roja</b> se puede tirar cualquier color y después los colores en orden: amarilla, verde, marrón, azul, rosa y negra.</li>
         <li><b>Máximo en mesa:</b> si toca roja, rojas × 8 + 27; si toca color tras una roja, se suman 7 más; en la secuencia final, la suma de los colores que quedan.</li>
-        <li><b>Faltas:</b> valen 4 puntos como mínimo, o el valor de la bola en juego, de la bola tocada o de la embolsada si es mayor (máximo 7). Los puntos son para el rival y la tacada termina.</li>
+        <li><b>Faltas:</b> valen 4 puntos como mínimo, o el valor de la bola en juego, de la bola tocada o de la embolsada si es mayor (máximo 7). Los puntos son para el rival y el break termina.</li>
         <li><b>Tras una falta</b> el rival elige jugar o hacer repetir al infractor. Si el árbitro canta <b>miss</b>, puede pedir reponer las bolas.</li>
         <li><b>Bola libre:</b> si tras la falta el rival queda snookeado, puede nominar cualquier bola como si fuera la bola en juego. Vale lo mismo que esa bola (1 si toca roja). No hay bola libre si se obliga al infractor a repetir.</li>
         <li><b>Snookers necesarios:</b> cuando la diferencia supera el máximo que queda, el jugador que va detrás necesita que el rival cometa faltas.</li>
@@ -511,7 +558,7 @@ details summary { cursor: pointer; font-family: var(--font-display); text-transf
       const t = brkTotal(f);
       closeBreak(f);
       if (f.phase === 'colour') { if (f.reds > 0) f.phase = 'red'; else { f.phase = 'sequence'; f.next = 2; } }
-      log(f, `${nm(f.turn)} termina turno` + (t ? ` (tacada ${t})` : ''), '');
+      log(f, `${nm(f.turn)} termina turno` + (t ? ` (break ${t})` : ''), '');
       f.turn = 1 - f.turn; f.freeBall = false;
     });
   }
@@ -588,7 +635,7 @@ details summary { cursor: pointer; font-family: var(--font-display); text-transf
         <span class="frames num">${p.frames}</span>
         <span class="score">${f.scores[i]}</span>
         ${won ? `<span class="won">${won}</span>` : ''}
-        <span class="meta"><span>Máx. <b>${f.scores[i] + mx}</b></span><span>Mejor tacada <b>${p.high}</b></span></span>
+        <span class="meta"><span>Máx. <b>${f.scores[i] + mx}</b></span><span>Mejor break <b>${p.high}</b></span></span>
         <span class="need">${need}</span>`;
       b.querySelector('.name').textContent = p.name;
       b.addEventListener('click', () => {

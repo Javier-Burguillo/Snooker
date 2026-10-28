@@ -1,6 +1,6 @@
 // Guarda la app en el iPhone para que funcione sin conexión.
 // Al cambiar index.html, sube el número de versión para que los móviles descarguen la nueva.
-const CACHE = 'snooker-v1';
+const CACHE = 'snooker-v3';
 const FILES = ['./', './index.html', './manifest.webmanifest', './apple-touch-icon.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
